@@ -37,10 +37,10 @@ function Target({ position, active, onHit }: {
         <torusGeometry args={[0.18, 0.03, 8, 16]} />
         <meshBasicMaterial color="#ffffff" />
       </mesh>
-      {/* Click hitbox - invisible large sphere */}
-      <mesh onClick={(e) => { e.stopPropagation(); onHit(); }} visible={false}>
-        <sphereGeometry args={[0.6, 8, 8]} />
-        <meshBasicMaterial transparent opacity={0} />
+      {/* Click hitbox - transparent but clickable */}
+      <mesh onClick={(e) => { e.stopPropagation(); onHit(); }}>
+        <sphereGeometry args={[0.8, 8, 8]} />
+        <meshBasicMaterial transparent opacity={0.001} depthTest={false} />
       </mesh>
     </group>
   );
@@ -132,7 +132,7 @@ export default function FPSRangeScene({
   const [combo, setCombo] = useState(0);
   const [targets, setTargets] = useState<Array<{id:number; pos:[number,number,number]; active:boolean}>>([]);
   const nextId = useRef(0);
-  const totalTargets = 25;
+  const totalTargets = 20;
   const maxActive = 3;
 
   // Lock player at shooting position
