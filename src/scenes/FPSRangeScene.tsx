@@ -93,10 +93,10 @@ function ScoreHUD({ hits, misses, combo }: { hits:number; misses:number; combo:n
     const total=hits+misses;
     const acc=total>0?Math.round(hits/total*100):0;
     el.innerHTML=`<div style="background:rgba(15,23,42,0.95);border-radius:16px;padding:10px 24px;border:1px solid #334155;display:flex;gap:24px;align-items:center;">
-      <div><span style="color:#64748b;font-size:11px;">命中</span><br><span style="color:#22c55e;font-size:18px;font-weight:bold;">${hits}/25</span></div>
+      <div><span style="color:#64748b;font-size:11px;">命中</span><br><span style="color:#22c55e;font-size:18px;font-weight:bold;">${hits}/20</span></div>
       <div><span style="color:#64748b;font-size:11px;">精度</span><br><span style="color:#e2e8f0;font-size:18px;font-weight:bold;">${acc}%</span></div>
       ${combo>2?`<div><span style="color:#64748b;font-size:11px;">连击</span><br><span style="color:#f59e0b;font-size:18px;font-weight:bold;">🔥x${combo}</span></div>`:''}
-      <div style="margin-left:8px;background:#1e293b;border-radius:8px;height:6px;width:80px;overflow:hidden;"><div style="background:linear-gradient(90deg,#22c55e,#3b82f6);height:100%;width:${hits/25*100}%;transition:width 0.3s;"></div></div>
+      <div style="margin-left:8px;background:#1e293b;border-radius:8px;height:6px;width:80px;overflow:hidden;"><div style="background:linear-gradient(90deg,#22c55e,#3b82f6);height:100%;width:${hits/20*100}%;transition:width 0.3s;"></div></div>
     </div>`;
     return()=>{if(el)el.remove();};
   },[hits,misses,combo]);
