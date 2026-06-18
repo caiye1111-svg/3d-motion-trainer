@@ -56,7 +56,7 @@ export default function TrainingHubPage() {
       {/* Level roadmap */}
       <h2 className="text-xl font-semibold mb-4">训练路线</h2>
       <div className="space-y-3">
-        {TRAINING_LEVELS.filter(l => l.id <= 5).map(level => {
+        {TRAINING_LEVELS.map(level => {
           const unlocked = unlockedLevels.includes(level.id);
           const isCurrent = level.id === currentLevel;
           return (
