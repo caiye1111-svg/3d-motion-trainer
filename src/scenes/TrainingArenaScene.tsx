@@ -216,6 +216,18 @@ export default function TrainingArenaScene({
       <Ramp start={[-8,3.5,-13]} end={[0,5,-16]} width={0.8} color="#c084fc" />
       <Ramp start={[0,5,-16]} end={[0,6.5,-19]} width={0.7} color="#22c55e" />
 
+      {/* Bounce pads */}
+      {[[5,0,-6],[-5,0,-6]].map(([x,y,z],i) => (
+        <group key={`pad-${i}`} position={[x, y+0.05, z]}>
+          <mesh rotation={[-Math.PI/2,0,0]}>
+            <ringGeometry args={[0.6, 0.8, 32]} />
+            <meshBasicMaterial color="#22c55e" side={THREE.DoubleSide} />
+          </mesh>
+          <mesh position={[0,0.3,0]}><cylinderGeometry args={[0.5,0.5,0.1,16]} /><meshStandardMaterial color="#22c55e" emissive="#22c55e" emissiveIntensity={0.8} /></mesh>
+          <pointLight color="#22c55e" intensity={1.5} distance={6} />
+        </group>
+      ))}
+
       {/* Orbs */}
       {ORB_POSITIONS.map((p,i)=><NeonOrb key={i} position={p} color={ORB_COLORS[i]} collected={collectedOrbs.includes(i)}/>)}
 
@@ -230,19 +242,25 @@ export default function TrainingArenaScene({
         allowTurning={isActive&&!isPaused}
         verticalMotion
         terrainHeight={(px, pz) => {
-          // Find nearest platform below player
+          // Bounce pads: if standing on a lower platform looking at a higher one, auto-launch
           const platforms = [
-            {x:0,z:-2,y:0,w:3,d:3},{x:5,z:-6,y:0,w:2,d:2},{x:-5,z:-6,y:0,w:2,d:2},
-            {x:5,z:-9,y:2,w:1.5,d:1.5},{x:-5,z:-9,y:2,w:1.5,d:1.5},
-            {x:0,z:-11,y:3,w:2,d:2},{x:8,z:-13,y:3.5,w:1.25,d:1.25},
-            {x:-8,z:-13,y:3.5,w:1.25,d:1.25},{x:0,z:-16,y:5,w:1.5,d:1.5},{x:0,z:-19,y:6.5,w:1,d:1},
+            {x:0,z:-2,y:0,w:3,d:3, bounce:false},
+            {x:5,z:-6,y:0,w:2,d:2, bounce:true},   // bounce up to platform at y=2
+            {x:-5,z:-6,y:0,w:2,d:2, bounce:true},
+            {x:5,z:-9,y:2,w:1.5,d:1.5, bounce:false},
+            {x:-5,z:-9,y:2,w:1.5,d:1.5, bounce:false},
+            {x:0,z:-11,y:3,w:2,d:2, bounce:false},
+            {x:8,z:-13,y:3.5,w:1.25,d:1.25, bounce:false},
+            {x:-8,z:-13,y:3.5,w:1.25,d:1.25, bounce:false},
+            {x:0,z:-16,y:5,w:1.5,d:1.5, bounce:false},
+            {x:0,z:-19,y:6.5,w:1,d:1, bounce:false},
           ];
           for (const p of platforms) {
-            if (Math.abs(px-p.x)<p.w && Math.abs(pz-p.z)<p.d) return p.y;
+            if (Math.abs(px-p.x)<p.w && Math.abs(pz-p.z)<p.d) return p.bounce ? p.y + 0.5 : p.y;
           }
-          return null; // falling — keep current height
+          return null;
         }}
-        hintText="🖱️点击锁定 · WASD移动跳跃 · 爬上平台收集10个光球"
+        hintText="🖱️点击锁定 · WASD移动 · 走向绿色蹦床跳上高层平台 · 收集10个光球"
       />
     </group>
   );
