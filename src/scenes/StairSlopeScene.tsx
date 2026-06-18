@@ -27,7 +27,7 @@ function GroundTile({ x, z, w, d }: { x: number; z: number; w: number; d: number
   return (
     <mesh position={[x, -0.05, z]} rotation={[-Math.PI/2, 0, 0]} receiveShadow>
       <planeGeometry args={[w, d]} />
-      <meshStandardMaterial color="#2d5a1e" roughness={1} />
+      <meshStandardMaterial color="#4a7a2e" roughness={0.8} />
     </mesh>
   );
 }
@@ -51,7 +51,7 @@ function PathSegment({ start, end, width = 1.2 }: {
   return (
     <mesh position={[cx, cy+0.02, cz]} rotation={[angle, rotY, 0]} receiveShadow>
       <planeGeometry args={[width, len]} />
-      <meshStandardMaterial color="#6b5a3e" roughness={0.9} />
+      <meshStandardMaterial color="#8a7a4e" roughness={0.7} />
     </mesh>
   );
 }

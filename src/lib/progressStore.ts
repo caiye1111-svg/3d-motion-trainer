@@ -134,7 +134,7 @@ export function recordSession(
   // 4. GOOD: Candidate upgrade
   else {
     progress.consecutiveFails = 0;
-    if (level.completedCount >= 2 && level.failedCount === 0) {
+    if (level.completedCount >= 1 && level.failedCount === 0) {
       recommendationAction = 'upgrade';
       const nextLevel = levelId + 1;
       if (nextLevel <= 12 && !progress.levels[nextLevel]?.unlocked) {
