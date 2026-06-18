@@ -1,6 +1,7 @@
 'use client';
 
 import { useRef, useState, useMemo, useCallback, useEffect } from 'react';
+import { useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 import FirstPersonController from '@/components/FirstPersonController';
 import { TrainingSceneConfig } from '@/types';
@@ -13,200 +14,297 @@ interface StairSlopeSceneProps {
   reachedCheckpoints?: number[];
 }
 
-// Checkpoints at key positions
 const CHECKPOINTS = [
-  { x: 0, y: 0, z: -8, label: '起点' },
-  { x: 0, y: 3, z: -20, label: '坡顶' },
-  { x: 0, y: 0.5, z: -32, label: '下坡后' },
-  { x: 0, y: 3.5, z: -44, label: '楼梯顶' },
-  { x: 0, y: 0, z: -56, label: '终点' },
+  { x: 0, y: 0.5, z: -4, label: '🌳 起点 · 林间小路' },
+  { x: 0, y: 3.5, z: -18, label: '⛰️ 第一段上坡完成' },
+  { x: 0, y: 0.8, z: -32, label: '🏞️ 下到山谷' },
+  { x: 0, y: 5.5, z: -48, label: '🪜 楼梯登顶' },
+  { x: 0, y: 0.3, z: -62, label: '🏁 终点 · 瞭望台' },
 ];
 
-function SlopedFloor({ start, end, width = 4 }: { start: [number, number, number]; end: [number, number, number]; width?: number }) {
+// === Natural ground with grass ===
+function GroundTile({ x, z, w, d }: { x: number; z: number; w: number; d: number }) {
+  return (
+    <mesh position={[x, -0.05, z]} rotation={[-Math.PI/2, 0, 0]} receiveShadow>
+      <planeGeometry args={[w, d]} />
+      <meshStandardMaterial color="#2d5a1e" roughness={1} />
+    </mesh>
+  );
+}
+
+// === Dirt path ===
+function PathSegment({ start, end, width = 1.2 }: {
+  start: [number, number, number];
+  end: [number, number, number];
+  width?: number;
+}) {
   const dx = end[0] - start[0];
   const dy = end[1] - start[1];
   const dz = end[2] - start[2];
-  const len = Math.sqrt(dx * dx + dz * dz);
+  const len = Math.sqrt(dx*dx + dz*dz);
   const angle = Math.atan2(dy, len);
-  const cx = (start[0] + end[0]) / 2;
-  const cy = (start[1] + end[1]) / 2;
-  const cz = (start[2] + end[2]) / 2;
   const rotY = Math.atan2(dx, dz);
+  const cx = (start[0]+end[0])/2;
+  const cy = (start[1]+end[1])/2;
+  const cz = (start[2]+end[2])/2;
 
   return (
-    <mesh position={[cx, cy, cz]} rotation={[angle, rotY, 0]} receiveShadow>
+    <mesh position={[cx, cy+0.02, cz]} rotation={[angle, rotY, 0]} receiveShadow>
       <planeGeometry args={[width, len]} />
-      <meshStandardMaterial color="#2a3a4a" roughness={0.8} />
+      <meshStandardMaterial color="#6b5a3e" roughness={0.9} />
     </mesh>
   );
 }
 
-function FlatFloor({ pos, size }: { pos: [number, number, number]; size: [number, number] }) {
-  return (
-    <mesh position={pos} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
-      <planeGeometry args={size} />
-      <meshStandardMaterial color="#1a2a3a" roughness={0.8} />
-    </mesh>
-  );
-}
-
-function Stairs({ startPos, endPos, steps = 8, width = 3 }: {
-  startPos: [number, number, number]; endPos: [number, number, number]; steps?: number; width?: number;
+// === Stone stairs ===
+function StoneSteps({ start, end, count = 10 }: {
+  start: [number, number, number];
+  end: [number, number, number];
+  count?: number;
 }) {
-  const dx = (endPos[0] - startPos[0]) / steps;
-  const dy = (endPos[1] - startPos[1]) / steps;
-  const dz = (endPos[2] - startPos[2]) / steps;
-  const stepDepth = 0.5;
-
+  const dx = (end[0]-start[0])/count;
+  const dy = (end[1]-start[1])/count;
+  const dz = (end[2]-start[2])/count;
   const items = [];
-  for (let i = 0; i < steps; i++) {
-    const x = startPos[0] + dx * i;
-    const y = startPos[1] + dy * i;
-    const z = startPos[2] + dz * i;
+  for (let i=0; i<count; i++) {
+    const x = start[0]+dx*i;
+    const y = start[1]+dy*i+0.15;
+    const z = start[2]+dz*i;
     items.push(
       <mesh key={i} position={[x, y, z]} castShadow receiveShadow>
-        <boxGeometry args={[width, dy, 0.6]} />
-        <meshStandardMaterial color={i % 2 === 0 ? '#3a5068' : '#2a4058'} roughness={0.7} />
+        <boxGeometry args={[2.5, 0.25, 0.8]} />
+        <meshStandardMaterial color={i%2===0?'#7a6a5a':'#8a7a6a'} roughness={0.7} />
       </mesh>
     );
   }
   return <group>{items}</group>;
 }
 
-function CheckpointOrb({ position, reached }: { position: [number, number, number]; reached: boolean }) {
+// === Wooden handrail ===
+function Handrail({ start, end, side }: {
+  start: [number, number, number];
+  end: [number, number, number];
+  side: -1 | 1;
+}) {
+  const dx = end[0]-start[0];
+  const dy = end[1]-start[1];
+  const dz = end[2]-start[2];
+  const len = Math.sqrt(dx*dx+dz*dz);
+  const angle = Math.atan2(dy, len);
+  const rotY = Math.atan2(dx, dz);
+  const cx = (start[0]+end[0])/2+side*1.5;
+  const cy = (start[1]+end[1])/2+1;
+  const cz = (start[2]+end[2])/2;
+
   return (
-    <group position={position}>
-      <mesh>
-        <sphereGeometry args={[0.4, 24, 24]} />
-        <meshStandardMaterial
-          color={reached ? '#22c55e' : '#06b6d4'}
-          emissive={reached ? '#22c55e' : '#06b6d4'}
-          emissiveIntensity={reached ? 0.2 : 1.0}
-          roughness={0.2}
-        />
+    <group>
+      <mesh position={[cx, cy, cz]} rotation={[angle, rotY, 0]}>
+        <boxGeometry args={[0.08, 0.1, len]} />
+        <meshStandardMaterial color="#6b4c3b" roughness={0.6} />
       </mesh>
-      {!reached && <pointLight color="#06b6d4" intensity={1.0} distance={8} />}
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.45, 0]}>
-        <ringGeometry args={[0.45, 0.55, 32]} />
-        <meshBasicMaterial color={reached ? '#22c55e' : '#06b6d4'} side={THREE.DoubleSide} />
+      {/* Posts */}
+      {Array.from({length: Math.floor(len/2)}).map((_,i)=>{
+        const t = (i*2)/len;
+        const px = start[0]+dx*t+side*1.5;
+        const py = start[1]+dy*t+0.5;
+        const pz = start[2]+dz*t;
+        return <mesh key={i} position={[px, py, pz]}><cylinderGeometry args={[0.05,0.05,0.8,8]} /><meshStandardMaterial color="#5a3a2a" /></mesh>;
+      })}
+    </group>
+  );
+}
+
+// === Tree ===
+function Tree({ position, scale = 1 }: { position: [number, number, number]; scale?: number }) {
+  return (
+    <group position={position} scale={scale}>
+      {/* Trunk */}
+      <mesh position={[0, 1, 0]} castShadow>
+        <cylinderGeometry args={[0.15, 0.2, 2, 8]} />
+        <meshStandardMaterial color="#4a3520" roughness={0.9} />
+      </mesh>
+      {/* Foliage layers */}
+      <mesh position={[0, 2.2, 0]} castShadow>
+        <coneGeometry args={[1, 1.8, 8, 4]} />
+        <meshStandardMaterial color="#1e5a1e" roughness={0.8} />
+      </mesh>
+      <mesh position={[0, 3, 0]} castShadow>
+        <coneGeometry args={[0.8, 1.5, 8, 4]} />
+        <meshStandardMaterial color="#2d6a2d" roughness={0.8} />
       </mesh>
     </group>
   );
 }
 
-function SideRail({ start, end, side }: { start: [number, number, number]; end: [number, number, number]; side: -1 | 1 }) {
-  const dx = end[0] - start[0];
-  const dy = end[1] - start[1];
-  const dz = end[2] - start[2];
-  const len = Math.sqrt(dx * dx + dz * dz);
-  const angle = Math.atan2(dy, len);
-  const rotY = Math.atan2(dx, dz);
-  const cx = (start[0] + end[0]) / 2 + side * 2;
-  const cy = (start[1] + end[1]) / 2 + 1;
-  const cz = (start[2] + end[2]) / 2;
-
+// === Rock ===
+function Rock({ position, scale = 1 }: { position: [number, number, number]; scale?: number }) {
   return (
-    <mesh position={[cx, cy, cz]} rotation={[angle, rotY, 0]}>
-      <boxGeometry args={[0.1, 0.15, len]} />
-      <meshStandardMaterial color="#f59e0b" emissive="#f59e0b" emissiveIntensity={0.3} />
+    <mesh position={position} scale={scale} castShadow>
+      <icosahedronGeometry args={[0.5+Math.random()*0.3, 1]} />
+      <meshStandardMaterial color="#666666" roughness={0.7} />
     </mesh>
   );
 }
 
-// Flash notification
+// === Checkpoint sign ===
+function CheckpointSign({ position, reached, label }: {
+  position: [number, number, number]; reached: boolean; label: string;
+}) {
+  return (
+    <group position={position}>
+      {/* Post */}
+      <mesh position={[0, 1, 0]} castShadow>
+        <cylinderGeometry args={[0.08, 0.08, 2, 8]} />
+        <meshStandardMaterial color="#5a3a2a" />
+      </mesh>
+      {/* Sign board */}
+      <mesh position={[0, 1.8, 0]}>
+        <boxGeometry args={[1.2, 0.6, 0.05]} />
+        <meshStandardMaterial color={reached?'#22c55e':'#f59e0b'} roughness={0.4} />
+      </mesh>
+      {/* Glow */}
+      <pointLight color={reached?'#22c55e':'#f59e0b'} intensity={reached?0.5:1.5} distance={8} />
+      {/* Number */}
+      <mesh position={[0, 1.81, 0.03]} rotation={[0,0,0]}>
+        <sphereGeometry args={[reached?0.15:0.25, 16, 16]} />
+        <meshBasicMaterial color={reached?'#22c55e':'#f59e0b'} />
+      </mesh>
+    </group>
+  );
+}
+
+// === Flash notification ===
 function useCheckpointNotify(index: number | null) {
   useEffect(() => {
-    if (index === null) return;
+    if (index===null) return;
     const el = document.createElement('div');
-    el.style.cssText = `
-      position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:23;
-      pointer-events:none;text-align:center;animation:cpPop 2s ease-out forwards;
-    `;
-    el.innerHTML = `<div style="font-size:36px;">✅</div><div style="background:rgba(15,23,42,0.95);border:2px solid #06b6d4;border-radius:14px;padding:8px 20px;"><p style="color:#06b6d4;font-size:16px;font-weight:bold;margin:0;">${CHECKPOINTS[index].label}</p></div>`;
+    el.style.cssText = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:23;pointer-events:none;text-align:center;animation:cpPop 2s ease-out forwards;';
+    el.innerHTML = `<div style="font-size:48px;">✅</div><div style="background:rgba(15,23,42,0.95);border:2px solid #f59e0b;border-radius:14px;padding:10px 24px;"><p style="color:#f59e0b;font-size:17px;font-weight:bold;margin:0;">${CHECKPOINTS[index].label}</p><p style="color:#94a3b8;font-size:12px;margin:4px 0 0;">检查点 ${index+1}/${CHECKPOINTS.length}</p></div>`;
     document.body.appendChild(el);
-    setTimeout(() => el.remove(), 2200);
-    return () => el.remove();
+    setTimeout(()=>el.remove(), 2500);
+    return ()=>el.remove();
   }, [index]);
 }
 
+if(typeof document!=='undefined'&&!document.getElementById('slope-anim')){
+  const s=document.createElement('style');s.id='slope-anim';
+  s.textContent='@keyframes cpPop{0%{opacity:0;transform:translate(-50%,-50%) scale(0.6)}25%{opacity:1;transform:translate(-50%,-50%) scale(1.05)}50%{transform:translate(-50%,-50%) scale(1)}100%{opacity:0;transform:translate(-50%,-55%)}}';
+  document.head.appendChild(s);
+}
+
 export default function StairSlopeScene({
-  config, isPaused, isActive, onCheckpointReached, reachedCheckpoints = [],
+  config, isPaused, isActive, onCheckpointReached, reachedCheckpoints=[],
 }: StairSlopeSceneProps) {
-  const [lastNotify, setLastNotify] = useState<number | null>(null);
+  const [lastNotify, setLastNotify] = useState<number|null>(null);
   const triggered = useRef<Set<number>>(new Set());
 
-  useEffect(() => { reachedCheckpoints.forEach(i => triggered.current.add(i)); }, [reachedCheckpoints]);
+  useEffect(()=>{reachedCheckpoints.forEach(i=>triggered.current.add(i));},[reachedCheckpoints]);
 
-  const handlePos = useCallback((pos: THREE.Vector3) => {
-    CHECKPOINTS.forEach((cp, i) => {
-      if (triggered.current.has(i)) return;
-      const dist = Math.sqrt((pos.x - cp.x) ** 2 + (pos.y - cp.y) ** 2 + (pos.z - cp.z) ** 2);
-      if (dist < 3.5) { triggered.current.add(i); setLastNotify(i); onCheckpointReached?.(i); }
+  const handlePos = useCallback((pos:THREE.Vector3)=>{
+    CHECKPOINTS.forEach((cp,i)=>{
+      if(triggered.current.has(i)) return;
+      if(Math.sqrt((pos.x-cp.x)**2+(pos.y-cp.y)**2+(pos.z-cp.z)**2)<4){
+        triggered.current.add(i);setLastNotify(i);onCheckpointReached?.(i);
+      }
     });
-  }, [onCheckpointReached]);
+  },[onCheckpointReached]);
 
   useCheckpointNotify(lastNotify);
 
+  // Tree positions
+  const trees = useMemo(()=>{
+    const t:Array<[number,number,number,number]>=[];
+    const r=()=>Math.random();
+    for(let z=-3;z>-65;z-=3){
+      if(z>-6&&z<-60)continue; // skip path area
+      t.push([-6+r()*2,0,z+r()*1.5,0.6+r()*1.2]);
+      t.push([6+r()*2,0,z+r()*1.5,0.6+r()*1.2]);
+    }
+    return t;
+  },[]);
+
   return (
     <group>
-      <ambientLight intensity={0.5} />
-      <directionalLight position={[5, 8, 5]} intensity={0.7} />
-      <hemisphereLight args={['#8899cc', '#223344', 0.3]} />
+      {/* Sky-like ambient */}
+      <ambientLight intensity={0.6} />
+      <directionalLight position={[8, 12, 4]} intensity={1.0} castShadow color="#fff5e8" />
+      <hemisphereLight args={['#87ceeb','#3d5a1e',0.4]} />
 
-      {/* Flat ground start */}
-      <FlatFloor pos={[0, 0, -4]} size={[8, 8]} />
+      {/* Ground planes */}
+      <GroundTile x={0} z={-15} w={20} d={30} />
+      <GroundTile x={0} z={-40} w={20} d={30} />
+      <GroundTile x={0} z={-65} w={20} d={25} />
 
-      {/* Gentle ramp up (5° slope) */}
-      <SlopedFloor start={[0, 0, -8]} end={[0, 3, -18]} width={4} />
-      <SideRail start={[0, 0, -8]} end={[0, 3, -18]} side={-1} />
-      <SideRail start={[0, 0, -8]} end={[0, 3, -18]} side={1} />
+      {/* Trees */}
+      {trees.map((t,i)=><Tree key={i} position={[t[0],t[3],t[2]]} scale={t[3]} />)}
 
-      {/* Flat platform at top */}
-      <FlatFloor pos={[0, 3, -21]} size={[6, 6]} />
+      {/* Rocks scattered */}
+      <Rock position={[-3,0.1,-8]} scale={1.2} />
+      <Rock position={[4,0,-15]} scale={0.8} />
+      <Rock position={[-5,3.5,-20]} scale={1} />
+      <Rock position={[3,0.8,-35]} scale={0.7} />
+      <Rock position={[-4,5.5,-50]} scale={1.1} />
 
-      {/* Gentle ramp down */}
-      <SlopedFloor start={[0, 3, -24]} end={[0, 0.3, -34]} width={4} />
-      <SideRail start={[0, 3, -24]} end={[0, 0.3, -34]} side={-1} />
-      <SideRail start={[0, 3, -24]} end={[0, 0.3, -34]} side={1} />
+      {/* === THE TRAIL === */}
 
-      {/* Flat ground */}
-      <FlatFloor pos={[0, 0.3, -37]} size={[6, 6]} />
+      {/* Flat start area */}
+      <PathSegment start={[0,0,0]} end={[0,0,-6]} width={2} />
 
-      {/* Stairs going up (8 steps) */}
-      <Stairs startPos={[0, 0.3, -40]} endPos={[0, 3.5, -46]} steps={8} width={3} />
-      <SideRail start={[0, 0.3, -40]} end={[0, 3.5, -46]} side={-1} />
-      <SideRail start={[0, 0.3, -40]} end={[0, 3.5, -46]} side={1} />
+      {/* Gentle uphill slope */}
+      <PathSegment start={[0,0,-6]} end={[0,3,-18]} width={1.8} />
+      <Handrail start={[0,0,-6]} end={[0,3,-18]} side={-1} />
+      <Handrail start={[0,0,-6]} end={[0,3,-18]} side={1} />
 
-      {/* Platform at top */}
-      <FlatFloor pos={[0, 3.5, -49]} size={[5, 5]} />
+      {/* Ridge platform */}
+      <PathSegment start={[0,3,-18]} end={[0,3,-22]} width={2.5} />
 
-      {/* Stairs going down */}
-      <Stairs startPos={[0, 3.5, -51]} endPos={[0, 0, -57]} steps={8} width={3} />
-      <SideRail start={[0, 3.5, -51]} end={[0, 0, -57]} side={-1} />
-      <SideRail start={[0, 3.5, -51]} end={[0, 0, -57]} side={1} />
+      {/* Gentle downhill */}
+      <PathSegment start={[0,3,-22]} end={[0,0.5,-34]} width={1.8} />
+      <Handrail start={[0,3,-22]} end={[0,0.5,-34]} side={-1} />
+      <Handrail start={[0,3,-22]} end={[0,0.5,-34]} side={1} />
+
+      {/* Valley flat */}
+      <PathSegment start={[0,0.5,-34]} end={[0,0.5,-38]} width={2.5} />
+
+      {/* Stone stairs going up */}
+      <StoneSteps start={[0,0.5,-38]} end={[0,5.2,-48]} count={14} />
+      <Handrail start={[0,0.5,-38]} end={[0,5.2,-48]} side={-1} />
+      <Handrail start={[0,0.5,-38]} end={[0,5.2,-48]} side={1} />
+
+      {/* Summit platform */}
+      <PathSegment start={[0,5.2,-48]} end={[0,5.2,-52]} width={2.5} />
+
+      {/* Downhill slope to finish */}
+      <PathSegment start={[0,5.2,-52]} end={[0,0.3,-64]} width={1.8} />
+      <Handrail start={[0,5.2,-52]} end={[0,0.3,-64]} side={-1} />
+      <Handrail start={[0,5.2,-52]} end={[0,0.3,-64]} side={1} />
 
       {/* Finish area */}
-      <FlatFloor pos={[0, 0, -60]} size={[6, 6]} />
-      <mesh position={[0, 0.02, -60]} rotation={[-Math.PI / 2, 0, 0]}>
-        <planeGeometry args={[4, 2]} />
-        <meshStandardMaterial color="#22c55e" emissive="#22c55e" emissiveIntensity={0.3} />
+      <mesh position={[0,0.33,-64]} rotation={[-Math.PI/2,0,0]}>
+        <planeGeometry args={[4,3]} />
+        <meshStandardMaterial color="#22c55e" emissive="#22c55e" emissiveIntensity={0.2} />
       </mesh>
-      <pointLight position={[0, 2, -60]} color="#22c55e" intensity={2} distance={10} />
 
-      {/* Checkpoints */}
-      {CHECKPOINTS.map((cp, i) => (
-        <CheckpointOrb key={i} position={[cp.x, cp.y + 1.5, cp.z]} reached={reachedCheckpoints.includes(i)} />
+      {/* Checkpoint signs */}
+      {CHECKPOINTS.map((cp,i)=>(
+        <CheckpointSign key={i} position={[cp.x, cp.y, cp.z]} reached={reachedCheckpoints.includes(i)} label={cp.label} />
       ))}
 
+      {/* Green start marker */}
+      <mesh position={[0,0.03,0]} rotation={[-Math.PI/2,0,0]}>
+        <ringGeometry args={[0.7,0.9,32]} />
+        <meshBasicMaterial color="#22c55e" side={THREE.DoubleSide} />
+      </mesh>
+
       <FirstPersonController
-        enabled={isActive && !isPaused}
-        moveSpeed={1.6}
+        enabled={isActive&&!isPaused}
+        moveSpeed={2.0}
         turnSpeed={config.turnSpeedLimit}
-        allowMovement={isActive && !isPaused}
-        allowTurning={isActive && !isPaused}
+        allowMovement={isActive&&!isPaused}
+        allowTurning={isActive&&!isPaused}
         verticalMotion
         onPositionChange={handlePos}
-        hintText="🖱️点击锁定 · WASD移动 · 鼠标转向 · 走完坡道+楼梯到达终点"
+        hintText="🖱️点击锁定 · WASD移动 · 鼠标转向 · 沿土路上坡和爬楼梯"
       />
     </group>
   );
