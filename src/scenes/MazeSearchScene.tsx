@@ -159,29 +159,6 @@ export default function MazeSearchScene({
     if (!isActive || isPaused) return;
     const pos = camera.position;
 
-    // Wall collision with slide
-    const playerR = 0.4;
-    let pushX = 0, pushZ = 0;
-    for (const w of wallBoxes) {
-      const cx = Math.max(w.minX, Math.min(pos.x, w.maxX));
-      const cz = Math.max(w.minZ, Math.min(pos.z, w.maxZ));
-      const dx = pos.x - cx;
-      const dz = pos.z - cz;
-      const dist = Math.sqrt(dx * dx + dz * dz);
-      if (dist < playerR && dist > 0.001) {
-        const overlap = playerR - dist;
-        const nx = dx / dist;
-        const nz = dz / dist;
-        pushX += nx * overlap;
-        pushZ += nz * overlap;
-      }
-    }
-    // Apply accumulated push
-    if (Math.abs(pushX) > 0.001 || Math.abs(pushZ) > 0.001) {
-      camera.position.x += pushX;
-      camera.position.z += pushZ;
-    }
-
     // Orb collection
     ORB_POSITIONS.forEach((orbPos, i) => {
       if (triggered.current.has(i)) return;
@@ -224,14 +201,6 @@ export default function MazeSearchScene({
     add(-3, 3, -3, -3);
     return w;
   }, []);
-
-  // Build collision boxes from walls
-  const wallBoxes = useMemo(() => walls.map(([x1, z1, x2, z2]) => ({
-    minX: Math.min(x1, x2) - 0.15,
-    maxX: Math.max(x1, x2) + 0.15,
-    minZ: Math.min(z1, z2) - 0.15,
-    maxZ: Math.max(z1, z2) + 0.15,
-  })), [walls]);
 
   useCollectFlash(lastCollected);
 

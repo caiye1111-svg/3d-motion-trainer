@@ -23,6 +23,8 @@ interface FirstPersonControllerProps {
   headBobStrength?: number;
   /** Custom hint text to display at bottom of screen */
   hintText?: string;
+  /** Terrain height function: given (x, z), return ground Y */
+  terrainHeight?: (x: number, z: number) => number | null;
 }
 
 const _euler = new THREE.Euler(0, 0, 0, 'YXZ');
@@ -39,6 +41,7 @@ export default function FirstPersonController({
   verticalMotion = false,
   headBobStrength = 0,
   hintText,
+  terrainHeight,
 }: FirstPersonControllerProps) {
   const { camera, gl } = useThree();
   const keys = useRef<Set<string>>(new Set());
@@ -111,6 +114,14 @@ export default function FirstPersonController({
     direction.normalize();
     camera.position.addScaledVector(direction, moveSpeed * delta);
     if (headBobStrength > 0) camera.position.y += bobOffset;
+
+    // Terrain following
+    if (terrainHeight && isMoving) {
+      const h = terrainHeight(camera.position.x, camera.position.z);
+      if (h !== null) {
+        camera.position.y = h + 1.6; // eye height above terrain
+      }
+    }
 
     if (onMove) onMove({ position: camera.position.clone(), rotation: new THREE.Euler().setFromQuaternion(camera.quaternion), isMoving, isTurning: false });
     if (onPositionChange) onPositionChange(camera.position.clone());

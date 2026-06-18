@@ -229,6 +229,19 @@ export default function TrainingArenaScene({
         allowMovement={isActive&&!isPaused}
         allowTurning={isActive&&!isPaused}
         verticalMotion
+        terrainHeight={(px, pz) => {
+          // Find nearest platform below player
+          const platforms = [
+            {x:0,z:-2,y:0,w:3,d:3},{x:5,z:-6,y:0,w:2,d:2},{x:-5,z:-6,y:0,w:2,d:2},
+            {x:5,z:-9,y:2,w:1.5,d:1.5},{x:-5,z:-9,y:2,w:1.5,d:1.5},
+            {x:0,z:-11,y:3,w:2,d:2},{x:8,z:-13,y:3.5,w:1.25,d:1.25},
+            {x:-8,z:-13,y:3.5,w:1.25,d:1.25},{x:0,z:-16,y:5,w:1.5,d:1.5},{x:0,z:-19,y:6.5,w:1,d:1},
+          ];
+          for (const p of platforms) {
+            if (Math.abs(px-p.x)<p.w && Math.abs(pz-p.z)<p.d) return p.y;
+          }
+          return null; // falling — keep current height
+        }}
         hintText="🖱️点击锁定 · WASD移动跳跃 · 爬上平台收集10个光球"
       />
     </group>

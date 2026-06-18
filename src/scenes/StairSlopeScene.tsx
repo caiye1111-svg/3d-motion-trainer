@@ -303,6 +303,18 @@ export default function StairSlopeScene({
         allowMovement={isActive&&!isPaused}
         allowTurning={isActive&&!isPaused}
         verticalMotion
+        terrainHeight={(_, z) => {
+          // Trail height map along Z axis
+          if (z > -6) return 0;
+          if (z > -18) return (Math.abs(z) - 6) / 12 * 3; // 0→3 uphill
+          if (z > -22) return 3;
+          if (z > -34) return 3 - (Math.abs(z) - 22) / 12 * 2.5; // 3→0.5 downhill
+          if (z > -38) return 0.5;
+          if (z > -48) return 0.5 + (Math.abs(z) - 38) / 10 * 4.7; // stairs up 0.5→5.2
+          if (z > -52) return 5.2;
+          if (z > -64) return 5.2 - (Math.abs(z) - 52) / 12 * 4.9; // 5.2→0.3 downhill
+          return 0.3;
+        }}
         onPositionChange={handlePos}
         hintText="🖱️点击锁定 · WASD移动 · 鼠标转向 · 沿土路上坡和爬楼梯"
       />
