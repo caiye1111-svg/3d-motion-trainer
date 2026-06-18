@@ -13,11 +13,9 @@ export default function TrainingHubPage() {
   useEffect(() => {
     const progress = loadProgress();
     setCurrentLevel(progress.currentLevel);
-    const unlocked = Object.values(progress.levels)
-      .filter(l => l.unlocked)
-      .map(l => l.levelId);
-    if (unlocked.length === 0) setUnlockedLevels([0, 1]);
-    else setUnlockedLevels(unlocked);
+    // Show all available levels (dev mode)
+    const allIds = TRAINING_LEVELS.map(l => l.id);
+    setUnlockedLevels(allIds);
   }, []);
 
   const levelData = TRAINING_LEVELS.find(l => l.id === currentLevel);

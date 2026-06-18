@@ -43,15 +43,13 @@ interface TrainingCanvasProps {
 
 // Map scene type from config level
 function getSceneType(config: TrainingSceneConfig): SceneType {
-  const sceneTypes: Record<number, SceneType> = {
-    0: 'static_room',
-    1: 'static_room',
-    2: 'visual_flow_tunnel',
-    3: 'slow_walk_corridor',
-    4: 'turn_training',
-    5: 'maze_search',
-  };
-  return sceneTypes[config.level] || 'static_room';
+  return config.level >= 7 ? 'training_arena'
+    : config.level >= 6 ? 'stair_slope'
+    : config.level >= 5 ? 'maze_search'
+    : config.level >= 4 ? 'turn_training'
+    : config.level >= 3 ? 'slow_walk_corridor'
+    : config.level >= 2 ? 'visual_flow_tunnel'
+    : 'static_room';
 }
 
 function SceneRouter(props: TrainingCanvasProps) {

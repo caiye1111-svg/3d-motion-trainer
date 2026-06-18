@@ -59,7 +59,23 @@ export default function FirstPersonController({
     const canvas = gl.domElement;
     canvas.addEventListener('click', requestLock);
 
-    const onLockChange = () => { isLocked.current = document.pointerLockElement === canvas; };
+    const onLockChange = () => {
+      isLocked.current = document.pointerLockElement === canvas;
+      // Show/hide overlay when unlocked
+      const overlay = document.getElementById('unlock-overlay');
+      if (!isLocked.current && enabled) {
+        if (!overlay) {
+          const el = document.createElement('div');
+          el.id = 'unlock-overlay';
+          el.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:20;display:flex;align-items:center;justify-content:center;cursor:pointer;';
+          el.innerHTML = '<div style="background:rgba(15,23,42,0.95);border:2px solid #f59e0b;border-radius:20px;padding:20px 32px;text-align:center;pointer-events:none;"><div style="font-size:40px;">🖱️</div><p style="color:#f59e0b;font-size:18px;font-weight:bold;margin:8px 0 0;">点击画面继续</p></div>';
+          el.addEventListener('click', () => { canvas.requestPointerLock(); el.remove(); });
+          document.body.appendChild(el);
+        }
+      } else if (overlay) {
+        overlay.remove();
+      }
+    };
     const onKeyDown = (e: KeyboardEvent) => keys.current.add(e.key.toLowerCase());
     const onKeyUp = (e: KeyboardEvent) => keys.current.delete(e.key.toLowerCase());
 
