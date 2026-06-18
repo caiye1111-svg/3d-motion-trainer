@@ -193,7 +193,12 @@ export default function TrainingCanvas(props: TrainingCanvasProps) {
       style={{ background: '#0f172a', width: '100%', height: '100%' }}
       gl={{ antialias: true, alpha: false }}
       dpr={[1, 2]}
+      tabIndex={0}
       camera={{ fov: effectiveFov, near: 0.1, far: 200, position: [0, 1.6, 0] }}
+      onCreated={({ gl }) => {
+        gl.domElement.focus();
+        gl.domElement.style.outline = 'none';
+      }}
     >
       <Suspense fallback={null}>
         <SceneRouter {...props} />
