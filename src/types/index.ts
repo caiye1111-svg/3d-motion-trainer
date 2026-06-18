@@ -44,12 +44,10 @@ export type SceneType =
   | 'turn_training'
   | 'maze_search'
   | 'stair_slope'
+  | 'training_arena'
+  | 'fps_range'
   | 'target_range'
-  | 'moving_targets'
-  | 'open_world_mini'
-  | 'running_bob'
-  | 'advanced_fps'
-  | 'advanced_open_world';
+  | 'open_world_mini';
 
 export interface TrainingSceneConfig {
   level: number;

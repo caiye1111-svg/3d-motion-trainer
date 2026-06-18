@@ -27,7 +27,7 @@ export interface UserProgress {
 function getDefaultProgress(): UserProgress {
   // Dev mode: unlock all available levels for easy testing
   const levels: Record<number, LevelProgress> = {};
-  for (let i = 0; i <= 6; i++) {
+  for (let i = 0; i <= 9; i++) {
     levels[i] = { levelId: i, completedCount: 0, failedCount: 0, unlocked: true };
   }
   return {

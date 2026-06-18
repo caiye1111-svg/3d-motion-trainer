@@ -128,7 +128,9 @@ export default function TrainingSessionPage() {
       (levelId === 3 && reachedCheckpoints.length >= 5) ||
       (levelId === 4 && turnCount >= 15) ||
       (levelId === 5 && collectedOrbs.length >= 5) ||
-      (levelId === 6 && reachedCheckpoints.length >= 5);
+      (levelId === 6 && reachedCheckpoints.length >= 5) ||
+      (levelId === 7 && collectedOrbs.length >= 10) ||
+      (levelId === 8 && hitCount >= 25);
     if (allDone) endTraining();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [foundObjects, reachedCheckpoints, collectedOrbs, hitCount, turnCount]);
@@ -201,6 +203,8 @@ export default function TrainingSessionPage() {
       case 4: return `转向 ${turnCount} / 15`;
       case 5: return `光球 ${collectedOrbs.length} / 5`;
       case 6: return `检查点 ${reachedCheckpoints.length} / 5`;
+      case 7: return `光球 ${collectedOrbs.length} / 10`;
+      case 8: return `命中 ${hitCount} / 25`;
       default: return '';
     }
   };

@@ -9,6 +9,8 @@ import SlowWalkCorridorScene from '@/scenes/SlowWalkCorridorScene';
 import TurnTrainingScene from '@/scenes/TurnTrainingScene';
 import MazeSearchScene from '@/scenes/MazeSearchScene';
 import StairSlopeScene from '@/scenes/StairSlopeScene';
+import TrainingArenaScene from '@/scenes/TrainingArenaScene';
+import FPSRangeScene from '@/scenes/FPSRangeScene';
 
 interface TrainingCanvasProps {
   config: TrainingSceneConfig;
@@ -133,7 +135,30 @@ function SceneRouter(props: TrainingCanvasProps) {
         />
       );
 
-    // Lv.7 ~ Lv.12 reuse existing scenes with different configs
+    // Lv.7: Training Arena
+    case 'training_arena':
+      return (
+        <TrainingArenaScene
+          config={config}
+          isPaused={isPaused}
+          isActive={isActive}
+          onOrbCollected={onOrbCollected}
+          collectedOrbs={collectedOrbs}
+        />
+      );
+
+    // Lv.8, Lv.9: FPS Range
+    case 'fps_range':
+      return (
+        <FPSRangeScene
+          config={config}
+          isPaused={isPaused}
+          isActive={isActive}
+          onTargetHit={onTunnelTargetClick}
+        />
+      );
+
+    // Lv.10-12 fallback: maze with higher params
     case 'target_range':
     case 'open_world_mini':
       return (
