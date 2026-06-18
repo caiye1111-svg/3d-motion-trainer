@@ -48,7 +48,7 @@ export default function FirstPersonController({
   const isLocked = useRef(false);
   const headBobPhase = useRef(0);
 
-  const effectiveTurnSpeed = turnSpeed * 0.003;
+  const effectiveTurnSpeed = turnSpeed * 0.0015; // Halved from 0.003
 
   // Pointer lock
   const requestLock = useCallback(() => {
