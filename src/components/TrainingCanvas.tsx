@@ -11,6 +11,7 @@ import MazeSearchScene from '@/scenes/MazeSearchScene';
 import StairSlopeScene from '@/scenes/StairSlopeScene';
 import TrainingArenaScene from '@/scenes/TrainingArenaScene';
 import FPSRangeScene from '@/scenes/FPSRangeScene';
+import OpenWorldScene from '@/scenes/OpenWorldScene';
 
 interface TrainingCanvasProps {
   config: TrainingSceneConfig;
@@ -158,9 +159,20 @@ function SceneRouter(props: TrainingCanvasProps) {
         />
       );
 
-    // Lv.10-12 fallback: maze with higher params
-    case 'target_range':
+    // Lv.10-11: Open World
     case 'open_world_mini':
+      return (
+        <OpenWorldScene
+          config={config}
+          isPaused={isPaused}
+          isActive={isActive}
+          onCheckpointReached={onCheckpointReached}
+          reachedCheckpoints={reachedCheckpoints}
+        />
+      );
+
+    // Lv.12: Advanced
+    case 'target_range':
       return (
         <MazeSearchScene
           config={config}

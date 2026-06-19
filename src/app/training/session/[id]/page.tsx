@@ -130,7 +130,8 @@ export default function TrainingSessionPage() {
       (levelId === 5 && collectedOrbs.length >= 5) ||
       (levelId === 6 && reachedCheckpoints.length >= 5) ||
       (levelId === 7 && collectedOrbs.length >= 10) ||
-      (levelId === 8 && hitCount >= 20);
+      (levelId === 8 && hitCount >= 20) ||
+      (levelId >= 10 && reachedCheckpoints.length >= 5);
     if (allDone) endTraining();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [foundObjects, reachedCheckpoints, collectedOrbs, hitCount, turnCount]);
